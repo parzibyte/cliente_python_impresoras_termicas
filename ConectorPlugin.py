@@ -155,6 +155,5 @@ class Conector:
             "operaciones": self.operaciones,
             "impresora": nombreImpresora,
         }
-        print(payload)
         respuesta = requests.post(self.ruta+"/imprimir", json=payload)
-        print(respuesta.json())
+        return respuesta.json()
