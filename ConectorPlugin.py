@@ -1,159 +1,143 @@
-"""
-    Una clase para interactuar con el plugin
-    @author parzibyte
-    @date 2021-02-11
-"""
-import json
 import requests
-"""
-    Constantes
-"""
-AccionTextoConAcentos = "textoacentos"
-AccionQrComoImagen = "qrimagen"
-AccionImagen = "imagen"
-AccionText = "text"
-AccionCut = "cut"
-AccionPulse = "pulse"
-AccionCutPartial = "cutpartial"
-AccionJustification = "setJustification"
-AccionTextSize = "setTextSize"
-AccionFont = "setFont"
-AccionEmphasize = "setEmphasis"
-AccionFeed = "feed"
-AccionQr = "qrCode"
-AlineacionCentro = "center"
-AlineacionDerecha = "right"
-AlineacionIzquierda = "left"
-FuenteA = "A"
-FuenteB = "B"
-FuenteC = "C"
-AccionBarcode128 = "barcode128"
-AccionBarcode39 = "barcode39"
-AccionBarcode93 = "barcode93"
-AccionBarcodeItf = "barcodeitf"
-AccionBarcodeJan13 = "barcodejan13"
-AccionBarcodeJan8 = "barcodejan8"
-AccionBarcodeTextAbove = "barcodetextabove"
-AccionBarcodeTextBelow = "barcodetextbelow"
-AccionBarcodeTextNone = "barcodetextnone"
-AccionBarcodeUPCA = "barcodeUPCA"
-AccionBarcodeUPCE = "barcodeUPCE"
-AccionImagenLocal = "imagenlocal"
 
 URL_PLUGIN_POR_DEFECTO = "http://localhost:8000"
+TAMAÑO_IMAGEN_NORMAL = 0
+TAMAÑO_IMAGEN_DOBLE_ANCHO = 1
+TAMAÑO_IMAGEN_DOBLE_ALTO = 2
+TAMAÑO_IMAGEN_DOBLE_ANCHO_Y_ALTO = 3
+ALINEACION_IZQUIERDA = 0
+ALINEACION_CENTRO = 1
+ALINEACION_DERECHA = 2
+RECUPERACION_QR_BAJA = 0
+RECUPERACION_QR_MEDIA = 1
+RECUPERACION_QR_ALTA = 2
+RECUPERACION_QR_MEJOR = 3
 
 
-class Operacion:
-    def __init__(self, operacion, datos):
-        self.operacion = operacion
-        self.datos = datos
+class ConectorV3:
 
-
-class Conector:
-
-    def __init__(self, ruta=URL_PLUGIN_POR_DEFECTO):
+    def __init__(self, ruta=URL_PLUGIN_POR_DEFECTO, serial=""):
         self.operaciones = []
         self.ruta = ruta
+        self.serial = serial
+
+    def agregar_operacion(self, nombre, argumentos):
+        self.operaciones.append({
+            "nombre": nombre,
+            "argumentos": argumentos,
+        })
 
     def obtenerImpresoras(ruta=URL_PLUGIN_POR_DEFECTO):
         respuesta = requests.get(ruta+"/impresoras")
         return respuesta.json()
 
-    # Función ayudante
-    def agregar_operacion(self, accion, datos):
-        self.operaciones.append({
-            "accion": accion,
-            "datos": str(datos),
-        })
+    def CargarImagenLocalEImprimir(self, ruta: str, tamaño: float, maximoAncho: float):
+        return self.agregar_operacion("CargarImagenLocalEImprimir", [ruta, tamaño, maximoAncho])
 
-    def texto(self, texto):
-        self.agregar_operacion(AccionText, texto)
-        return self
+    def Corte(self, lineas):
+        return self.agregar_operacion("Corte", [lineas])
 
-    def textoConAcentos(self, texto):
-        self.agregar_operacion(AccionTextoConAcentos, texto)
-        return self
+    def CorteParcial(self):
+        return self.agregar_operacion("CorteParcial", [])
 
-    def feed(self, cantidad):
-        self.agregar_operacion(AccionFeed, cantidad)
-        return self
+    def DefinirCaracterPersonalizado(self, caracterRemplazoComoCadena: str, matrizComoCadena: str):
+        return self.agregar_operacion("DefinirCaracterPersonalizado", [caracterRemplazoComoCadena, matrizComoCadena])
 
-    def establecerTamanioFuente(self, multiplicadorAncho, multiplicadorAlto):
-        self.agregar_operacion(
-            AccionTextSize, f"{multiplicadorAncho},{multiplicadorAlto}")
-        return self
+    def DescargarImagenDeInternetEImprimir(self, urlImagen: str, tamaño: float, maximoAncho: float):
+        return self.agregar_operacion("DescargarImagenDeInternetEImprimir", [urlImagen, tamaño, maximoAncho])
 
-    def establecerFuente(self, fuente):
-        if fuente not in [FuenteA, FuenteB, FuenteC]:
-            raise Exception("La fuente no es válida")
-        self.agregar_operacion(AccionFont, fuente)
-        return self
+    def DeshabilitarCaracteresPersonalizados(self, ):
+        return self.agregar_operacion("DeshabilitarCaracteresPersonalizados", [])
 
-    def establecerEnfatizado(self, valor):
-        if valor not in [0, 1]:
-            raise Exception("Valor debe ser 1 o 0")
-        self.agregar_operacion(AccionEmphasize, valor)
-        return self
+    def DeshabilitarElModoDeCaracteresChinos(self, ):
+        return self.agregar_operacion("DeshabilitarElModoDeCaracteresChinos", [])
 
-    def establecerJustificacion(self, justificacion):
-        if justificacion not in [AlineacionCentro, AlineacionDerecha, AlineacionIzquierda]:
-            raise Exception("Justificación inválida")
-        self.agregar_operacion(AccionJustification, justificacion)
-        return self
+    def EscribirTexto(self, texto: str):
+        return self.agregar_operacion("EscribirTexto", [texto])
 
-    def cortar(self):
-        self.agregar_operacion(AccionCut, "")
-        return self
+    def EstablecerAlineacion(self, alineacion: float):
+        return self.agregar_operacion("EstablecerAlineacion", [alineacion])
 
-    def abrirCajon(self):
-        self.agregar_operacion(AccionPulse, "")
-        return self
+    def EstablecerEnfatizado(self, enfatizado: bool):
+        return self.agregar_operacion("EstablecerEnfatizado", [enfatizado])
 
-    def cortarParcialmente(self):
-        self.agregar_operacion(AccionCutPartial, "")
-        return self
+    def EstablecerFuente(self, fuente: float):
+        return self.agregar_operacion("EstablecerFuente", [fuente])
 
-    def imagenDesdeUrl(self, url):
-        self.agregar_operacion(AccionImagen, url)
-        return self
+    def EstablecerImpresionAlReves(self, alReves: bool):
+        return self.agregar_operacion("EstablecerImpresionAlReves", [alReves])
 
-    def imagenLocal(self, ubicacion):
-        self.agregar_operacion(AccionImagenLocal, ubicacion)
-        return self
+    def EstablecerImpresionBlancoYNegroInversa(self, invertir: bool):
+        return self.agregar_operacion("EstablecerImpresionBlancoYNegroInversa", [invertir])
 
-    def qr(self, contenido):
-        self.agregar_operacion(AccionQr, contenido)
-        return self
+    def EstablecerRotacionDe90Grados(self, rotar: bool):
+        return self.agregar_operacion("EstablecerRotacionDe90Grados", [rotar])
 
-    def qrComoImagen(self, contenido):
-        self.agregar_operacion(AccionQrComoImagen, contenido)
-        return self
+    def EstablecerSubrayado(self, subrayado: bool):
+        return self.agregar_operacion("EstablecerSubrayado", [subrayado])
 
-    def validarTipoDeCodigoDeBarras(self, tipo):
-        validos = [
-            AccionBarcode128,
-            AccionBarcode39,
-            AccionBarcode93,
-            AccionBarcodeItf,
-            AccionBarcodeJan13,
-            AccionBarcodeJan8,
-            AccionBarcodeTextAbove,
-            AccionBarcodeTextBelow,
-            AccionBarcodeTextNone,
-            AccionBarcodeUPCA,
-            AccionBarcodeUPCE,
-        ]
-        if tipo not in validos:
-            raise Exception("Código de barras inválido")
+    def EstablecerTamañoFuente(self, multiplicadorAncho: float, multiplicadorAlto: float):
+        return self.agregar_operacion("EstablecerTamañoFuente", [multiplicadorAncho, multiplicadorAlto])
 
-    def codigoDeBarras(self, contenido, tipo):
-        self.validarTipoDeCodigoDeBarras(tipo)
-        self.agregar_operacion(tipo, contenido)
+    def Feed(self, lineas):
+        return self.agregar_operacion("Feed", [lineas])
+
+    def HabilitarCaracteresPersonalizados(self):
+        return self.agregar_operacion("HabilitarCaracteresPersonalizados", [])
+
+    def HabilitarElModoDeCaracteresChinos(self):
+        return self.agregar_operacion("HabilitarElModoDeCaracteresChinos", [])
+
+    def ImprimirCodigoDeBarrasCodabar(self, contenido: str, alto: float, ancho: float, tamañoImagen: float):
+        return self.agregar_operacion("ImprimirCodigoDeBarrasCodabar", [contenido, alto, ancho, tamañoImagen])
+
+    def ImprimirCodigoDeBarrasCode128(self, contenido: str, alto: float, ancho: float, tamañoImagen: float):
+        return self.agregar_operacion("ImprimirCodigoDeBarrasCode128", [contenido, alto, ancho, tamañoImagen])
+
+    def ImprimirCodigoDeBarrasCode39(self, contenido: str, incluirSumaDeVerificacion: bool, modoAsciiCompleto: bool, alto: float, ancho: float, tamañoImagen: float):
+        return self.agregar_operacion("ImprimirCodigoDeBarrasCode39", [contenido, incluirSumaDeVerificacion, modoAsciiCompleto, alto, ancho, tamañoImagen])
+
+    def ImprimirCodigoDeBarrasCode93(self, contenido: str, alto: float, ancho: float, tamañoImagen: float):
+        return self.agregar_operacion("ImprimirCodigoDeBarrasCode93", [contenido, alto, ancho, tamañoImagen])
+
+    def ImprimirCodigoDeBarrasEan(self, contenido: str, alto: float, ancho: float, tamañoImagen: float):
+        return self.agregar_operacion("ImprimirCodigoDeBarrasEan", [contenido, alto, ancho, tamañoImagen])
+
+    def ImprimirCodigoDeBarrasEan8(self, contenido: str, alto: float, ancho: float, tamañoImagen: float):
+        return self.agregar_operacion("ImprimirCodigoDeBarrasEan8", [contenido, alto, ancho, tamañoImagen])
+
+    def ImprimirCodigoDeBarrasPdf417(self, contenido: str, nivelSeguridad: float, alto: float, ancho: float, tamañoImagen: float):
+        return self.agregar_operacion("ImprimirCodigoDeBarrasPdf417", [contenido, nivelSeguridad, alto, ancho, tamañoImagen])
+
+    def ImprimirCodigoDeBarrasTwoOfFiveITF(self, contenido: str, intercalado: bool, alto: float, ancho: float, tamañoImagen: float):
+        return self.agregar_operacion("ImprimirCodigoDeBarrasTwoOfFiveITF", [contenido, intercalado, alto, ancho, tamañoImagen])
+
+    def ImprimirCodigoDeBarrasUpcA(self, contenido: str, alto: float, ancho: float, tamañoImagen: float):
+        return self.agregar_operacion("ImprimirCodigoDeBarrasUpcA", [contenido, alto, ancho, tamañoImagen])
+
+    def ImprimirCodigoDeBarrasUpcE(self, contenido: str, alto: float, ancho: float, tamañoImagen: float):
+        return self.agregar_operacion("ImprimirCodigoDeBarrasUpcE", [contenido, alto, ancho, tamañoImagen])
+
+    def ImprimirCodigoQr(self, contenido: str, anchoMaximo: float, nivelRecuperacion: float, tamañoImagen: float):
+        return self.agregar_operacion("ImprimirCodigoQr", [contenido, anchoMaximo, nivelRecuperacion, tamañoImagen])
+
+    def ImprimirImagenEnBase64(self, imagenCodificadaEnBase64: str, tamaño: float, maximoAncho: float):
+        return self.agregar_operacion("ImprimirImagenEnBase64", [imagenCodificadaEnBase64, tamaño, maximoAncho])
+
+    def Iniciar(self, ):
+        return self.agregar_operacion("Iniciar", [])
+
+    def Pulso(self, pin: float, tiempoEncendido: float, tiempoApagado: float):
+        return self.agregar_operacion("Pulso", [pin, tiempoEncendido, tiempoApagado])
+
+    def TextoSegunPaginaDeCodigos(self, numeroPagina: float, pagina: str, texto: str):
+        return self.agregar_operacion("TextoSegunPaginaDeCodigos", [numeroPagina, pagina, texto])
 
     def imprimirEn(self, nombreImpresora):
         payload = {
             "operaciones": self.operaciones,
-            "impresora": nombreImpresora,
+            "nombreImpresora": nombreImpresora,
+            "serial": self.serial,
         }
         respuesta = requests.post(self.ruta+"/imprimir", json=payload)
         return respuesta.json()
